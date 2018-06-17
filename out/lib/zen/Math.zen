@@ -1,0 +1,13 @@
+val Math = class -> {
+
+    public val abs = (num: i64) -> num > 0 ? num : 0 - num
+
+    public val pow = (num: i64, times: i64) -> {
+        
+    }
+
+
+    public val calcBigNumber = () 
+
+
+}

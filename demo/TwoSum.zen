@@ -1,0 +1,6 @@
+val main = () -> {
+    Console.write('Enter two numbers: ')
+    var a: i32 = Console.read()
+    var b: i32 = Console.read()
+    Console.writeln('Result: ' + (a + b))
+}

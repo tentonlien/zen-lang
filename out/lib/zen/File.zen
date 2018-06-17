@@ -1,0 +1,40 @@
+val File = class -> {
+
+    val name: String
+
+
+    public val File = (fileName: String) -> name = fileName
+
+    public val close = () -> {
+        
+    }
+
+    public val copy = (fileName: String, newFileName: String) -> {
+
+    }
+
+    public val delete = (fileName: String) -> {
+
+    }
+
+    public val move = (fileName: String, newFileName: String) -> {
+
+    }
+
+    public val readAll = () -> {
+
+    }
+
+    public val readChar = () -> {
+
+    }
+
+    public val readLine = () -> {
+
+    }
+
+    public val write = () -> {
+
+    }
+
+}

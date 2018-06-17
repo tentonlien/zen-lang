@@ -1,0 +1,17 @@
+cmake_minimum_required(VERSION 3.5)
+project(zen_compiler)
+
+SET(CMAKE_BUILD_TYPE "Debug")
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+
+add_executable(
+    zen_compiler
+    ../zen_assembler/zasm.cpp
+    zc.cpp
+    lexer.cpp
+    parser.cpp
+    tree.cpp
+    generator.cpp
+    lib2/console.cpp
+)
