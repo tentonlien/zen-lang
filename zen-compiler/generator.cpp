@@ -5,7 +5,7 @@
 #include <map>
 #include "zc.h"
 #include "tree.h"
-#include "../zen_assembler/zasm.h"
+#include "zasm/zasm.h"
 
 using namespace std;
 

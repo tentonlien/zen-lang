@@ -3,10 +3,6 @@ Aims to build an elegant, multi-paradigm, statically typed and general-purpose p
 旨在构建一门优雅的、多范式及静态类型的通用编程语言。
 
 
-## Modules
-- Zen Virtual Machine
-- Zen Assembler
-- Zen Compiler
 
 ## Get Started with Zen
 

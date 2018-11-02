@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include "zc.h"
-#include "../zen_assembler/zasm.h"
+#include "zasm/zasm.h"
 
 using namespace std;
 

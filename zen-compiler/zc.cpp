@@ -2,7 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "../zen_assembler/zasm.h"
+#include "zasm/zasm.h"
 #include "zc.h"
 
 using namespace std;
