@@ -36,3 +36,4 @@ zen-compiler/CMakeFiles/zen-compiler.dir/tree.cpp.o
 zen-compiler/CMakeFiles/zen-compiler.dir/zasm/zasm.cpp.o
 zen-compiler/CMakeFiles/zen-compiler.dir/zc.cpp.o
 zen-compiler/Makefile
+zen-compiler/CMakeFiles/zen-compiler.dir/log.cpp.o

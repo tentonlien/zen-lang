@@ -1,26 +1,18 @@
-// val num: Int = 123
-
-val Int = class -> {
-    public var value: i32
-
-    val Int = (arg: i32) -> value = arg
-
-    val Int = (arg: String) -> {
-        for (var i in arg.lentgth) {
-            // TO-DO
+class Int(value: i32) {
+    def Int(val: String) {
+        for (var i in val.lentgth) {
+            // TODO
         }
     }
 
-    val toString: () -> String(value)
-    val toFloat: () -> Float(value)
-    val toDouble: () -> Double(value)
+    def toString -> String(value)
+    def toFloat -> Float(value)
+    def toDouble -> Double(value)
 }
 
 
-val string = class -> {
-    private var ch: vector(char)
-    public var length: i64 = 0
-
-    public val string = (arg: vector(char)) -> ch = arg
-    
+class String(value: vector(char)) {
+    def length: i64 {
+    	// TODO
+    }
 }

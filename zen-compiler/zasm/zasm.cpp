@@ -204,8 +204,6 @@ void DataSectionParser() {
         }
 
         variables.push_back(variable);
-        
-        //cout << variable.name << " " << variable.type << " " << variable.value << endl;
     }
 }
 
@@ -534,7 +532,6 @@ void ExecutableFileWrite(string asmFileName) {
     }
 
     of.close();
-    //cout << "Successfully assembled" << endl;
 }
 
 

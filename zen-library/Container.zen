@@ -1,8 +1,15 @@
-val Array = class -> {
+trait Array {
 
 }
 
+trait Vector {
 
-val Vector = class -> {
+}
+
+class Array {
+
+}
+
+class Vector {
     
 }

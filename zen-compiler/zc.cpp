@@ -10,6 +10,8 @@ using namespace std;
 extern struct tok token;
 extern vector<struct tok> tokens;
 string compilerPath;
+string sourcePath;
+bool infoMode = false;
 
 int main(int argc, char* argv[]) {
     compilerPath = argv[0];
@@ -40,31 +42,26 @@ int main(int argc, char* argv[]) {
     string codes(begin, end);
     
     sourceFile.close();  
-    Lexer(codes);  // Lexical analysis
 
-    //*
-    cout << "Token Stream" << endl;
-    for (int i = 0; i < lines.size(); i ++) {
-        for(int k = 0; k < lines.at(i).size(); k ++) {
-            printf("Line %d: %-15s%-10s\n", i, lines.at(i).at(k).type.c_str(), lines.at(i).at(k).value.c_str());
-        }
-        
-    }
-    //*/
+    i = sourceFileName.length();
+    while (sourceFileName[i] != '/') i --;
+    sourcePath = sourceFileName.substr(0, i);
 
-    cout << endl << "Abstract Syntax Tree" << endl;
-    Parser();  // Syntax analysis
-    cout << endl << endl;
+    // Lexical analysis
+    Lexer(codes);  
+    
+    // Syntax analysis
+    Parser();  
+    
     Generator();
     
-    for (int i = 0; i < zasm::lines.size(); i ++) {
-        cout << zasm::lines.at(i) << endl;
-    }
-    
-
+    // Call assembler
     int pos = sourceFileName.find(".zen");
     string output = sourceFileName.substr(0, pos) + ".asm";
-    Initializer(output);  // Call assembler
+    Initializer(output);  
 
+    // Output compilation log
+    extern void log();
+    log();
     return 0;
 }

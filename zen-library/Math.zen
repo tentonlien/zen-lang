@@ -1,13 +1,13 @@
-val Math = class -> {
+trait Math {
+		def abs(i64)
+		def calcBigNumber()
+    def pow(i64, i64)
+}
 
-    public val abs = (num: i64) -> num > 0 ? num : 0 - num
+class Math {
+    def abs(val: i64) -> val > 0 ? val : 0 - val
+    
+    def calcBigNumber() {}
 
-    public val pow = (num: i64, times: i64) -> {
-        
-    }
-
-
-    public val calcBigNumber = () 
-
-
+    def pow(num: i64, times: i64) {}
 }

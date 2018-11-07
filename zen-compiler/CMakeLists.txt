@@ -7,10 +7,11 @@ SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
 add_executable(
     zen-compiler
-    zasm/zasm.cpp
-    zc.cpp
+    generator.cpp
     lexer.cpp
+    log.cpp
     parser.cpp
     tree.cpp
-    generator.cpp
+    zasm/zasm.cpp
+    zc.cpp 
 )

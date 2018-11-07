@@ -23,8 +23,8 @@ class Tree {
         void add(string, string);
         void add(Tree tree);
         void release(TreeNode*);
-		void preOrder() {preOrder(root);}
-        void preOrder(TreeNode*);
+		string preOrder() {return preOrder(root);}
+        string preOrder(TreeNode*);
         string getValue();
         int size();
         Tree operator[] (string);

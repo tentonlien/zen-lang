@@ -12,17 +12,19 @@ struct tok token;
 vector<struct tok> tokens;
 vector<vector<struct tok>> lines;
 
-string keyword[] = {"char", "else", "if", "i32","val", "var", "while", "class"};
-string types[] = {
-    "function", "class", "method", "byte", "char", "double", "float", 
-    "int", "long", "short", "string",
-    "i32"
+string keyword[] = {
+    "asm", "break", "case", "catch", "class", "continue", "def", "do",
+    "else", "extends", "for", "fun", "if", "import", "private", 
+    "protected", "public", "return", "switch", "this", "try", 
+    "trait", "val", "var", "void", "while"
 };
+
+string types[] = {
+    "bool", "char", "i8", "u8", "i16", "u16", "i32", "u32", "i64", "u64", "f32", "f64"
+};
+
 string operators[] = {">", "+", "-", "*", "/", "="};
 char puncs[] = {',', ';', '(', ')', '.', ':', '{', '}'};
-//string libraries[] = {"zen", "zenx"};
-//string modules[] = {"Console"};
-//string functions[] = {"read", "readln", "writeln"};
 string variables[] = {};
 
 string charToString(char ch) {
@@ -39,14 +41,11 @@ vector<string> split(const string &str,const string &pattern)
     strcpy(strc, str.c_str());
     vector<string> resultVec;
     char* tmpStr = strtok(strc, pattern.c_str());
-    while (tmpStr != NULL)
-    {
+    while (tmpStr != NULL) {
         resultVec.push_back(string(tmpStr));
         tmpStr = strtok(NULL, pattern.c_str());
     }
-
     delete[] strc;
-
     return resultVec;
 }
 
@@ -78,64 +77,52 @@ void Lexer(string codes) {
             }
             if (find(keyword, keyword + sizeof(keyword) / sizeof(*keyword), temp) - keyword != sizeof(keyword) / sizeof(*keyword)) {
                 token.type = "keyword";
+                if (temp == "import") {
+                    int ii = i;
+                    while (codes[ii] != '\n' && codes[ii] != 0) {
+                        ii ++;
+                    }
+                    vector<string> result = split(codes.substr(i + 2, ii - i - 3), ".");
+                    string relativePath = "";
+                    for (int i = 0; i < result.size(); i ++) {
+                        relativePath +=  "/" + result.at(i);    
+                    }
+                    extern string compilerPath;
+                    string libraryPath = compilerPath + "/lib" + relativePath + ".zen";
+                    //cout << libraryPath << endl;
+
+                    // Read source code file
+                    std::ifstream libFile(libraryPath);
+
+                    if (!libFile) {
+                        ShowError(0, "Library \"" + libraryPath + "\" not found");
+                    }
+
+                    istreambuf_iterator<char> begin(libFile);
+                    istreambuf_iterator<char> end;
+                    string libCodes(begin, end);
+    
+                    libFile.close(); 
+                    Lexer(libCodes);
+
+                    i ++;
+                    continue;
+                } 
+                
+                else if (temp == "val") {
+                    token.value = "val";
+                    i ++;
+                }
+                
+                else if (temp == "var") {
+                    token.value = "var";
+                    i ++;
+                }
             } else if (find(types, 
                 types + sizeof(types) / sizeof(*types), temp) - types != sizeof(types) / sizeof(*types)) {
                 token.type = "type";
             } else if (find(operators, operators + sizeof(operators) / sizeof(*operators), temp) - operators != sizeof(operators) / sizeof(*operators)) {
                 token.type = "operator";
-            } 
-            else if (temp == "import") {
-                //token.type = "import";
-                int ii = i;
-                while (codes[ii] != '\n' && codes[ii] != 0) {
-                    ii ++;
-                }
-                cout << "TEST " << codes.substr(i + 2, ii - i - 3) << endl;
-                vector<string> result = split(codes.substr(i + 2, ii - i - 3), ".");
-                string relativePath = "";
-                for (int i = 0; i < result.size(); i ++) {
-                    relativePath +=  "/" + result.at(i);
-                    
-                }
-                extern string compilerPath;
-                string libraryPath = compilerPath + "/lib" + relativePath + ".zen";
-                cout << libraryPath << endl;
-
-                // Read source code file
-                std::ifstream libFile(libraryPath);
-
-                if (!libFile) {
-                    ShowError(0, "Library \"" + libraryPath + "\" not found");
-                }
-
-                istreambuf_iterator<char> begin(libFile);
-                istreambuf_iterator<char> end;
-                string libCodes(begin, end);
-    
-                libFile.close(); 
-                Lexer(libCodes);
-
-                i ++;
-                continue;
-            } 
-            else if (temp == "val") {
-                i ++;
-                temp = "";
-                while (isalpha(codes[i + 1])) {
-                    temp += codes[i + 1];
-                    i ++;
-                }
-                token.type = "val";
-                i ++;
-            } else if (temp == "var") {
-                temp= "";
-                i ++;
-                while (isalnum(codes[i + 1])) {
-                    temp += codes[i + 1];
-                    i ++;
-                }
-                token.type = "var";
-                i ++;
             } else {
                 token.type = "word";
             }

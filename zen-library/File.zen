@@ -1,40 +1,28 @@
-val File = class -> {
+trait File {
+	def close
+    def copy(String, String)
+    def delete(String)
+    def move(String, String)
+    def readAll
+    def readChar
+    def readln
+    def write
+}
 
-    val name: String
+class File(name: String) {
+    def close {}
 
+    def copy(val: String, newVal: String) {}
 
-    public val File = (fileName: String) -> name = fileName
+    def delete(val: String) {}
 
-    public val close = () -> {
-        
-    }
+    def move(val: String, newVal: String) {}
 
-    public val copy = (fileName: String, newFileName: String) -> {
+    def readAll {}
 
-    }
+    def readChar {}
 
-    public val delete = (fileName: String) -> {
+    def readlln {}
 
-    }
-
-    public val move = (fileName: String, newFileName: String) -> {
-
-    }
-
-    public val readAll = () -> {
-
-    }
-
-    public val readChar = () -> {
-
-    }
-
-    public val readLine = () -> {
-
-    }
-
-    public val write = () -> {
-
-    }
-
+    def write() {}
 }

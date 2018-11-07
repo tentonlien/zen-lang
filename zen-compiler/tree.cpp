@@ -105,26 +105,25 @@ Tree Tree::operator[] (int n) {
 }
 
 
-void Tree::preOrder(TreeNode* node) {
-    if (node == NULL) return;
-    cout << "\"" << node -> data << "\"";
+string Tree::preOrder(TreeNode* node) {
+    string result = "";
+    if (node == NULL) return result;
+    result += "\"" + node -> data + "\"";
     if (node -> firstChild == NULL) {
-        //cout << " ";
     } else {
-        cout << ": ";
-        cout << "{";
-        //if (node -> firstChild -> rightSibling != NULL || node -> firstChild -> firstChild != NULL) cout << "{";
-        preOrder(node -> firstChild);
-        //if (node -> firstChild -> rightSibling != NULL || node -> firstChild -> firstChild != NULL) cout << "}";
-        cout << "}";
+        result += ": ";
+        result += "{";
+        result += preOrder(node -> firstChild);
+        result += "}";
     }
     if (node -> rightSibling == NULL) {
         
     } else {
-        cout << ", ";
-        preOrder(node -> rightSibling);
+        result += ", ";
+        result += preOrder(node -> rightSibling);
            
     }
+    return result;
 }
 
 string Tree::getValue() {

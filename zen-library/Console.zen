@@ -1,31 +1,35 @@
-val Console = class -> {
+trait Console {
+    def clear
+    def read(String)
+    def readln(String)
+    def write(String) 
+    def writeln(String)
+    def writeln(i64)
+}
 
-    public val clear = () -> {
-        
+class Console {
+    def clear {}
+
+    def read(arg: String) {
+        asm('mov ax,0')
+        asm('int 10h')
     }
 
-    public val read = (arg: String) -> {
-        __ASM__('mov ax,0')
-        __ASM__('int 10h')
+    def readln(arg: String) {}
+
+    def write(arg: String) {
+        asm('mov ax,0')
+        asm('mov bx,0')
+        asm('mov dx,' + arg)
+        asm('int 11h')
     }
 
-    public val readln = (arg: String) -> {
+    def writeln(arg: String) {}
 
-    }
-
-    public val write = (arg: String) -> {
-        __ASM__('mov ax,0')
-        __ASM__('mov bx,0')
-        __ASM__('mov dx,' + arg)
-        __ASM__('int 11h')
-    }
-
-    public val writeln = (arg: String) -> {}
-
-    public val writeln = (arg: i64) -> {
-        __ASM__('mov ax,0')
-        __ASM__('mov bx,2')
-        __ASM__('mov dx,' + arg)
-        __ASM__('int 11h')
+    def writeln(arg: i64) {
+        asm('mov ax,0')
+        asm('mov bx,2')
+        asm('mov dx,' + arg)
+        asm('int 11h')
     }
 }

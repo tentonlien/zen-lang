@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <cstdio>
 #include <utility>
 #include "zc.h"
 #include "tree.h"
@@ -143,23 +144,37 @@ void parseModuleFunction() {
 */
 
 void parseClasses() {
-    for (int i = 0; i < lines.size(); i ++) {
+        for (int i = 0; i < lines.size(); i ++) {
         tokens = lines.at(i);
         int c = 0;  // Cursor
-        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "val")) continue;
+        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "class")) continue;
         if (tokens.size() <= ++ c || tokens.at(c).type != "word") {
             ShowError(i + 1, "Invalid value statement");
         }
-        if (!(tokens.size() > ++ c && tokens.at(c).type == "operator" && tokens.at(c).value == "=")) continue;
-        if (!(tokens.size() > ++ c && tokens.at(c).type == "keyword" && tokens.at(c).value == "class")) continue;
+
+        if (tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == "(") {
+            while(tokens.at(c).type != "punc" || tokens.at(c).value != ")") {
+                c ++;
+                // TO-DO Parameter List
+            }
+            c ++;
+        }
         
-        if (!(tokens.size() > ++ c && tokens.at(c).type == "operator" && tokens.at(c).value == "->")) continue;
+        if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == ":") {
+            Function.returnType = tokens.at(c + 1).value;
+            c += 2;
+        } else {
+            Function.returnType = "";
+        }
+
+        if (tokens.size() > c && tokens.at(c).type == "operator" && tokens.at(c).value == "->") {
+            Function.startLine = Function.endLine = i;
+        }
                             
-        if (tokens.size() > ++c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
-            zClass.name = tokens.at(1).value;
+        else if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
             zClass.startLine = i;
             int counter = 1;
-            int cursor = 7;
+            int cursor = c + 1;
             int j = i;
             bool loop = true;
             while (j < lines.size() && loop) {
@@ -179,37 +194,49 @@ void parseClasses() {
                 cursor = 0;
                 j ++;
             }
-                                    
-            zClasses.push_back(zClass);
-        }    
-    }        
+        }
+
+        else if (tokens.size() > c) {
+            //////
+        }
+
+        zClass.name = tokens.at(1).value;
+        zClasses.push_back(zClass);
+    }
 }
 
 void parseFunctions() {
     for (int i = 0; i < lines.size(); i ++) {
         tokens = lines.at(i);
         int c = 0;  // Cursor
-        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "val")) continue;
+        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "fun")) continue;
         if (tokens.size() <= ++ c || tokens.at(c).type != "word") {
             ShowError(i + 1, "Invalid value statement");
         }
-        if (!(tokens.size() > ++ c && tokens.at(c).type == "operator" && tokens.at(c).value == "=")) continue;
-        if (!(tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == "(")) continue;
-        // TO-DO Parameter List
-        if (!(tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == ")")) continue;
-        if (tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == ":") {
+
+        if (tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == "(") {
+            while(tokens.at(c).type != "punc" || tokens.at(c).value != ")") {
+                c ++;
+                // TO-DO Parameter List
+            }
+            c ++;
+        }
+        
+        if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == ":") {
             Function.returnType = tokens.at(c + 1).value;
             c += 2;
         } else {
             Function.returnType = "";
         }
-        if (!(tokens.size() > c && tokens.at(c).type == "operator" && tokens.at(c).value == "->")) continue;
+
+        if (tokens.size() > c && tokens.at(c).type == "operator" && tokens.at(c).value == "->") {
+            Function.startLine = Function.endLine = i;
+        }
                             
-        if (tokens.size() > ++c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
-            Function.name = tokens.at(1).value;
+        else if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
             Function.startLine = i;
             int counter = 1;
-            int cursor = 7;
+            int cursor = c + 1;
             int j = i;
             bool loop = true;
             while (j < lines.size() && loop) {
@@ -229,9 +256,14 @@ void parseFunctions() {
                 cursor = 0;
                 j ++;
             }
-                                    
-            Functions.push_back(Function);
-        }    
+        }
+
+        else if (tokens.size() > c) {
+            //////
+        }
+
+        Function.name = tokens.at(1).value;
+        Functions.push_back(Function);
     }        
 }
 
@@ -248,7 +280,7 @@ void parseLine(int start, int end) {
             }
 
             // Parse Assembly Instructions
-            else if (tokens.at(pos).type == "word" && tokens.at(pos).value == "__ASM__") {
+            else if (tokens.at(pos).type == "keyword" && tokens.at(pos).value == "asm") {
                 // Check syntax
                 if (pos + 1 >= tokens.size() || !(tokens.at(pos + 1).type == "punc" && tokens.at(pos + 1).value == "(")) {
                     ShowError(lineNumber + 1, "Missing symbol \"(\"");
@@ -292,7 +324,7 @@ void parseLine(int start, int end) {
                 // Parse Function
                 if (tokens.at(pos + 1).type == "punc" && tokens.at(pos + 1).value == "(") {
                     if (!(tokens.at(tokens.size() - 1).type == "punc" && tokens.at(tokens.size() - 1).value == ")")) {
-                        ShowError(lineNumber + 1, "Missing \")\"");
+                        ShowError(lineNumber + 1, "fffMissing \")\"");
                     }
                     parseCall(false);
                     break;
@@ -325,24 +357,14 @@ void Parser() {
     AST.add("prog");
     parseClasses();
     parseFunctions();
-    cout << "Function Manager" << endl;
+    
     for (int i = 0; i < Functions.size(); i ++) {
-        cout << Functions.at(i).name << " " << Functions.at(i).startLine << " " << Functions.at(i).endLine << " " << Functions.at(i).returnType << endl;
         if (Functions.at(i).name == "main") {
-            parseLine(Functions.at(i).startLine, Functions.at(i).endLine);
+            parseLine(Functions.at(i).startLine + 1, Functions.at(i).endLine);
             break;
         }
         if (i == Functions.size() - 1) {
             ShowError(0, "Function \"main\" required as entry of the program");
         }
     }
-
-    cout << "Class Manager" << endl;
-    for (int i = 0; i < zClasses.size(); i ++) {
-        cout << zClasses.at(i).name << " " << zClasses.at(i).startLine << " " << zClasses.at(i).endLine << endl;
-    }
-
-    
-    
-    AST.preOrder();
 }
