@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cstring>
 #include <fstream>
-#include <iostream>
 #include <string>
 #include "zc.h"
 #include "zasm/zasm.h"
@@ -50,8 +49,8 @@ vector<string> split(const string &str,const string &pattern)
 }
 
 
-void Lexer(string codes) {
-    int i = 0;
+void Lexer(string codes, string fileName) {
+    unsigned int i = 0, lineNumber = 1;
     tokens.clear();
     while (i <= codes.length()) {
         string temp = "", temp2 = "";
@@ -64,12 +63,14 @@ void Lexer(string codes) {
             }
             token.type = "num";
             token.value = temp;
+            token.line = lineNumber;
+            token.file = fileName;
             tokens.push_back(token);
             i ++;
         }
 
         // Scan words
-        else if (codes[i] =='_' || isalpha(codes[i])) {
+        else if (codes[i] == '_' || isalpha(codes[i])) {
             temp += codes[i];
             while(codes[i + 1] == '_' || isalnum(codes[i + 1])) {
                 temp += codes[i + 1];
@@ -84,12 +85,11 @@ void Lexer(string codes) {
                     }
                     vector<string> result = split(codes.substr(i + 2, ii - i - 3), ".");
                     string relativePath = "";
-                    for (int i = 0; i < result.size(); i ++) {
+                    for (unsigned int i = 0; i < result.size(); i ++) {
                         relativePath +=  "/" + result.at(i);    
                     }
                     extern string compilerPath;
                     string libraryPath = compilerPath + "/lib" + relativePath + ".zen";
-                    //cout << libraryPath << endl;
 
                     // Read source code file
                     std::ifstream libFile(libraryPath);
@@ -103,7 +103,7 @@ void Lexer(string codes) {
                     string libCodes(begin, end);
     
                     libFile.close(); 
-                    Lexer(libCodes);
+                    Lexer(libCodes, libraryPath);
 
                     i ++;
                     continue;
@@ -127,6 +127,8 @@ void Lexer(string codes) {
                 token.type = "word";
             }
             token.value = temp;
+            token.line = lineNumber;
+            token.file = fileName;
             tokens.push_back(token);
             i ++;
         }
@@ -140,6 +142,8 @@ void Lexer(string codes) {
             }
             token.type = "operator";
             token.value = temp;
+            token.line = lineNumber;
+            token.file = fileName;
             tokens.push_back(token);
             i ++;
         }
@@ -153,6 +157,8 @@ void Lexer(string codes) {
             //}
             token.type = "punc";
             token.value = temp;
+            token.line = lineNumber;
+            token.file = fileName;
             tokens.push_back(token);
             i ++;
         }
@@ -171,6 +177,8 @@ void Lexer(string codes) {
                 token.type = "string";
             }
             token.value = temp;
+            token.line = lineNumber;
+            token.file = fileName;
             tokens.push_back(token);
             i += 2;
         }
@@ -189,6 +197,7 @@ void Lexer(string codes) {
             if (codes[i - 1] != ',') {
                 lines.push_back(tokens);
                 vector<struct tok>().swap(tokens);
+                lineNumber ++;
             }
             i ++;
         }

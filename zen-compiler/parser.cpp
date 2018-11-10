@@ -2,7 +2,6 @@
 // 10/7/2018
 // All Syntax Checks are done in the parser
 
-#include <iostream>
 #include <string>
 #include <map>
 #include <cstdio>
@@ -15,27 +14,16 @@ using namespace std;
 
 // Abstract syntax tree
 Tree AST;
-int pos = 0;
-int lineNumber = 0;
-int mainFunctionStart, mainFunctionEnd;
+unsigned int pos = 0;
+unsigned int lineNumber = 0;
+unsigned int mainFunctionStart, mainFunctionEnd;
 
-struct function {
-    string name;
-    string returnType;
-    int startLine;
-    int endLine;
-    vector<pair<string, string>> parameterList;
+struct zen_function Function;
+vector<struct zen_function> Functions;
+struct zen_method Method;
+struct zen_class Class;
+vector<struct zen_class> Classes;
 
-} Function;
-
-struct zclass {
-    string name;
-    int startLine;
-    int endLine;
-} zClass;
-
-vector<struct function> Functions;
-vector<struct zclass> zClasses;
 
 void parseVariable() {
     string name, type, value;
@@ -89,126 +77,51 @@ Tree* parseExpression(int start, int end) {
 }
 
 
-void parseAssignment() {
-    int newElementId = AST["prog"].size();
-    AST["prog"].add(newElementId);
-    AST["prog"][newElementId].add("type", "assign");
-    AST["prog"][newElementId].add("operator", tokens.at(pos + 1).value);
+void parseAssignment(string funcName) {
+    int newElementId = AST["prog"][funcName].size();
+    AST["prog"][funcName].add(newElementId);
+    AST["prog"][funcName][newElementId].add("type", "assign");
+    AST["prog"][funcName][newElementId].add("operator", tokens.at(pos + 1).value);
 
-    AST["prog"][newElementId].add("left");
-    AST["prog"][newElementId]["left"].add("type", "var");
-    AST["prog"][newElementId]["left"].add("value", tokens.at(pos).value);
+    AST["prog"][funcName][newElementId].add("left");
+    AST["prog"][funcName][newElementId]["left"].add("type", "var");
+    AST["prog"][funcName][newElementId]["left"].add("value", tokens.at(pos).value);
 
-    AST["prog"][newElementId].add("right");
+    AST["prog"][funcName][newElementId].add("right");
     if (parseExpression(pos + 2, tokens.size()) != NULL) {
-        AST["prog"][newElementId]["right"].add(*parseExpression(pos + 2, tokens.size()));
+        AST["prog"][funcName][newElementId]["right"].add(*parseExpression(pos + 2, tokens.size()));
     } else if (tokens.at(pos + 2).type == "num") {
-        AST["prog"][newElementId]["right"].add("type", "num");
-        AST["prog"][newElementId]["right"].add("value", tokens.at(pos + 2).value);
+        AST["prog"][funcName][newElementId]["right"].add("type", "num");
+        AST["prog"][funcName][newElementId]["right"].add("value", tokens.at(pos + 2).value);
     }
 }
 
 
-void parseCall(bool isMethod) {
-    int newElementId = AST["prog"].size();
-    AST["prog"].add(newElementId);
-    AST["prog"][newElementId].add("type", "call");
+void parseCall(string funcName, bool isMethod) {
+    int newElementId = AST["prog"][funcName].size();
+    AST["prog"][funcName].add(newElementId);
+    AST["prog"][funcName][newElementId].add("type", "call");
     if (isMethod) {
-        AST["prog"][newElementId].add("class", tokens.at(pos).value);
-        AST["prog"][newElementId].add("value", tokens.at(pos + 2).value);
-    } else {
-        AST["prog"][newElementId].add("class", "");
-        AST["prog"][newElementId].add("func", tokens.at(pos).value);
-    }
-    
-    
-}
-
-
-/*
-void parseModuleFunction() {
-    int newElementId = AST["prog"].size();
-    if (tokens.at(pos).value == "Console") {
-        AST["prog"].add(newElementId);
-        AST["prog"][newElementId].add("type", "i_call");
-        AST["prog"][newElementId].add("module", tokens.at(pos).value);
-        AST["prog"][newElementId].add("function", tokens.at(pos+ 2).value);
-        AST["prog"][newElementId].add("args");
+        AST["prog"][funcName][newElementId].add("class", tokens.at(pos).value);
+        AST["prog"][funcName][newElementId].add("value", tokens.at(pos + 2).value);
         if (tokens.at(pos + 3).value != "()") {
-            AST["prog"][newElementId]["args"].add("type", tokens.at(pos + 4).type);
-            AST["prog"][newElementId]["args"].add("value", tokens.at(pos + 4).value);
+            AST["prog"][funcName][newElementId].add("args");
+            AST["prog"][funcName][newElementId]["args"].add("type", tokens.at(pos + 4).type);
+            AST["prog"][funcName][newElementId]["args"].add("value", tokens.at(pos + 4).value);
         }
-        
+    } else {
+        AST["prog"][funcName][newElementId].add("class", "");
+        AST["prog"][funcName][newElementId].add("value", tokens.at(pos).value);
     }
-}
-*/
-
-void parseClasses() {
-        for (int i = 0; i < lines.size(); i ++) {
-        tokens = lines.at(i);
-        int c = 0;  // Cursor
-        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "class")) continue;
-        if (tokens.size() <= ++ c || tokens.at(c).type != "word") {
-            ShowError(i + 1, "Invalid value statement");
-        }
-
-        if (tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == "(") {
-            while(tokens.at(c).type != "punc" || tokens.at(c).value != ")") {
-                c ++;
-                // TO-DO Parameter List
-            }
-            c ++;
-        }
-        
-        if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == ":") {
-            Function.returnType = tokens.at(c + 1).value;
-            c += 2;
-        } else {
-            Function.returnType = "";
-        }
-
-        if (tokens.size() > c && tokens.at(c).type == "operator" && tokens.at(c).value == "->") {
-            Function.startLine = Function.endLine = i;
-        }
-                            
-        else if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
-            zClass.startLine = i;
-            int counter = 1;
-            int cursor = c + 1;
-            int j = i;
-            bool loop = true;
-            while (j < lines.size() && loop) {
-                vector<struct tok> tokens2 = lines.at(j);
-                for (int k = cursor; k < tokens2.size(); k ++) {
-                    if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "{") {
-                        counter ++;
-                    } else if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "}") {
-                        counter --;
-                    }
-                    if (counter == 0) {
-                        zClass.endLine = j;
-                        loop = false;
-                        break;
-                    }
-                }
-                cursor = 0;
-                j ++;
-            }
-        }
-
-        else if (tokens.size() > c) {
-            //////
-        }
-
-        zClass.name = tokens.at(1).value;
-        zClasses.push_back(zClass);
-    }
+    
+    
 }
 
-void parseFunctions() {
-    for (int i = 0; i < lines.size(); i ++) {
+
+void parseFunction() {
+    for (unsigned int i = 0; i < lines.size(); i ++) {
         tokens = lines.at(i);
-        int c = 0;  // Cursor
+        unsigned int c = 0;  // Cursor
         if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "fun")) continue;
         if (tokens.size() <= ++ c || tokens.at(c).type != "word") {
             ShowError(i + 1, "Invalid value statement");
@@ -235,13 +148,13 @@ void parseFunctions() {
                             
         else if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
             Function.startLine = i;
-            int counter = 1;
-            int cursor = c + 1;
-            int j = i;
+            unsigned int counter = 1;
+            unsigned int cursor = c + 1;
+            unsigned int j = i;
             bool loop = true;
             while (j < lines.size() && loop) {
                 vector<struct tok> tokens2 = lines.at(j);
-                for (int k = cursor; k < tokens2.size(); k ++) {
+                for (unsigned int k = cursor; k < tokens2.size(); k ++) {
                     if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "{") {
                         counter ++;
                     } else if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "}") {
@@ -264,11 +177,151 @@ void parseFunctions() {
 
         Function.name = tokens.at(1).value;
         Functions.push_back(Function);
+        AST["prog"]["fun"].add(Function.name);
+        AST["prog"]["fun"][Function.name].add("startLine", to_string(Function.startLine));
+        AST["prog"]["fun"][Function.name].add("endLine", to_string(Function.endLine));
+        AST["prog"]["fun"][Function.name].add("returnType", Function.returnType);
+        continue;
+    }    
+}
+
+
+void parseClass() {
+        for (unsigned int i = 0; i < lines.size(); i ++) {
+        tokens = lines.at(i);
+        unsigned int c = 0;  // Cursor
+        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "class")) continue;
+        if (tokens.size() <= ++ c || tokens.at(c).type != "word") {
+            ShowError(i + 1, "Invalid value statement");
+        }
+
+        if (tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == "(") {
+            while(tokens.at(c).type != "punc" || tokens.at(c).value != ")") {
+                c ++;
+                // TO-DO Parameter List
+            }
+            c ++;
+        }
+        
+        if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == ":") {
+            Function.returnType = tokens.at(c + 1).value;
+            c += 2;
+        } else {
+            Function.returnType = "";
+        }
+
+        if (tokens.size() > c && tokens.at(c).type == "operator" && tokens.at(c).value == "->") {
+            Function.startLine = Function.endLine = i;
+        }
+                            
+        else if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
+            Class.startLine = i;
+            unsigned int counter = 1;
+            unsigned int cursor = c + 1;
+            unsigned int j = i;
+            bool loop = true;
+            while (j < lines.size() && loop) {
+                vector<struct tok> tokens2 = lines.at(j);
+                for (unsigned int k = cursor; k < tokens2.size(); k ++) {
+                    if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "{") {
+                        counter ++;
+                    } else if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "}") {
+                        counter --;
+                    }
+                    if (counter == 0) {
+                        Class.endLine = j;
+                        loop = false;
+                        break;
+                    }
+                }
+                cursor = 0;
+                j ++;
+            }
+        }
+
+        else if (tokens.size() > c) {
+            //////
+        }
+
+        Class.name = tokens.at(1).value;
+        Class.file = tokens.at(1).file;
+        Classes.push_back(Class);
+    }
+}
+
+
+void parseMethod() {
+    for (unsigned int i = 0; i < lines.size(); i ++) {
+        tokens = lines.at(i);
+        unsigned int c = 0;  // Cursor
+        string whichFile;
+
+        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "def")) continue;
+        if (tokens.size() <= ++ c || tokens.at(c).type != "word") {
+            ShowError(i + 1, "Invalid value statement");
+        }
+
+        if (tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == "(") {
+            while(tokens.at(c).type != "punc" || tokens.at(c).value != ")") {
+                c ++;
+                // TO-DO Parameter List
+            }
+            c ++;
+        }
+        
+        if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == ":") {
+            Method.returnType = tokens.at(c + 1).value;
+            c += 2;
+        } else {
+            Method.returnType = "";
+        }
+
+        if (tokens.size() > c && tokens.at(c).type == "operator" && tokens.at(c).value == "->") {
+            Method.startLine = Method.endLine = i;
+        }
+                            
+        else if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
+            Method.startLine = i;
+            unsigned int counter = 1;
+            unsigned int cursor = c + 1;
+            unsigned int j = i;
+            bool loop = true;
+            while (j < lines.size() && loop) {
+                vector<struct tok> tokens2 = lines.at(j);
+                for (unsigned int k = cursor; k < tokens2.size(); k ++) {
+                    if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "{") {
+                        counter ++;
+                    } else if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "}") {
+                        counter --;
+                    }
+                    if (counter == 0) {
+                        Method.endLine = j;
+                        loop = false;
+                        break;
+                    }
+                }
+                cursor = 0;
+                j ++;
+            }
+        }
+
+        else if (tokens.size() > c) {
+            //////
+        }
+
+        Method.name = tokens.at(1).value;
+        for (unsigned int k = 0; k < Classes.size(); k ++) {
+            if (Classes.at(k).file == tokens.at(1).file) {
+                if (Method.startLine > Classes.at(k).startLine && Method.endLine <= Classes.at(k).endLine) {
+                    Classes.at(k).methods.push_back(Method);
+                }
+            }
+        }     
     }        
 }
 
 
-void parseLine(int start, int end) {
+void parseLine(string funcName, unsigned int start, unsigned int end) {
     for (lineNumber = start; lineNumber <= end; lineNumber ++) {
         tokens = lines.at(lineNumber);
         pos = 0;
@@ -293,16 +346,16 @@ void parseLine(int start, int end) {
                 }
                 if (pos + 4 < tokens.size()) {
                     string unidentified = "";
-                    for (int i = pos + 4; i < tokens.size(); i ++) {
+                    for (unsigned int i = pos + 4; i < tokens.size(); i ++) {
                         unidentified += "\"" + tokens.at(i).value + "\" ";
                     }
                     ShowError(lineNumber + 1, "Unidentified symbol " + unidentified + "at the end of this line.");
                 }
 
-                int newElementId = AST["prog"].size();
-                AST["prog"].add(newElementId);
-                AST["prog"][newElementId].add("type", "asm");
-                AST["prog"][newElementId].add("value", tokens.at(pos + 2).value);
+                int newElementId = AST["prog"][funcName].size();
+                AST["prog"][funcName].add(newElementId);
+                AST["prog"][funcName][newElementId].add("type", "asm");
+                AST["prog"][funcName][newElementId].add("value", tokens.at(pos + 2).value);
                 break;
             }
 
@@ -317,24 +370,23 @@ void parseLine(int start, int end) {
                     if (!(tokens.at(tokens.size() - 1).type == "punc" && tokens.at(tokens.size() - 1).value == ")")) {
                         ShowError(lineNumber + 1, "Missing \")\"");
                     }
-                    parseCall(true);
+                    parseCall(funcName, true);
                     break;
                 }
 
                 // Parse Function
                 if (tokens.at(pos + 1).type == "punc" && tokens.at(pos + 1).value == "(") {
                     if (!(tokens.at(tokens.size() - 1).type == "punc" && tokens.at(tokens.size() - 1).value == ")")) {
-                        ShowError(lineNumber + 1, "fffMissing \")\"");
+                        ShowError(lineNumber + 1, "Missing \")\"");
                     }
-                    parseCall(false);
+                    parseCall(funcName, false);
                     break;
                 }
 
 
                 // Parse assginment
                 else if (tokens.at(pos).type == "word" && pos + 2 < tokens.size()  && tokens.at(pos + 1).value == "=" && tokens.at(pos + 2).value != "(") {
-                    //cout << tokens.at(pos).value << endl;
-                    parseAssignment();
+                    parseAssignment(funcName);
                     pos ++;
                 }
                 
@@ -355,12 +407,17 @@ void Parser() {
     // Initial abstract syntax tree
     AST.add("data");
     AST.add("prog");
-    parseClasses();
-    parseFunctions();
+    AST["prog"].add("fun");
+    AST["prog"].add("class");
+
+    parseFunction();
+    parseClass();
+    parseMethod();
     
-    for (int i = 0; i < Functions.size(); i ++) {
+    for (unsigned int i = 0; i < Functions.size(); i ++) {
+        cout << "func: " << Functions.at(i).name << endl;
         if (Functions.at(i).name == "main") {
-            parseLine(Functions.at(i).startLine + 1, Functions.at(i).endLine);
+            parseLine("main", Functions.at(i).startLine + 1, Functions.at(i).endLine);
             break;
         }
         if (i == Functions.size() - 1) {

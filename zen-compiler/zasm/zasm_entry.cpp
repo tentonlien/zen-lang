@@ -34,7 +34,6 @@ int main(int argc, char* argv[]) {
     }
 
     asmFile.close();
-    
     Initializer(asmFileName);
     return 0;
 }

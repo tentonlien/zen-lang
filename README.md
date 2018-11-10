@@ -10,9 +10,7 @@ Aims to build an elegant, multi-paradigm, statically typed and general-purpose p
 ```
 // hello.zen
 
-val main = () -> {
-    Console.writeln('Hello World!')
-}
+fun main -> Console.writeln('Hello World!')
 ```
 - To use the compiler, type the command below in Shell and enter.
 ```
@@ -50,7 +48,7 @@ With ZenX (Zen Extended Library, which is still in plan), we can do more product
 import zenx.Sql
 import zenx.Web
 
-val main = () -> {
+fun main {
     try {
         Sql.connect('localhost', 'username', 'password')
     } catch (String e) {

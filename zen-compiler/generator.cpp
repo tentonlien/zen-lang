@@ -51,39 +51,42 @@ void generateData() {
     }
 }
 
-void generateCode(int i) {
-    if (AST["prog"][i]["type"].getValue() == "asm") {
-        zasm::lines.push_back(AST["prog"][i]["value"].getValue());
+void generateCode(string funcName, int i) {
+    if (AST["prog"][funcName][i]["type"].getValue() == "asm") {
+        zasm::lines.push_back(AST["prog"][funcName][i]["value"].getValue());
     } 
     
-    else if (AST["prog"][i]["type"].getValue() == "assign") {
-        if (AST["prog"][i]["left"]["type"].getValue() == "var") {
-            if (AST["prog"][i]["right"]["type"].getValue() == "num") {
-                zasm::lines.push_back("mov " + AST["prog"][i]["left"]["value"].getValue() + "," + AST["prog"][i]["right"]["value"].getValue());
+    else if (AST["prog"][funcName][i]["type"].getValue() == "assign") {
+        if (AST["prog"][funcName][i]["left"]["type"].getValue() == "var") {
+            if (AST["prog"][funcName][i]["right"]["type"].getValue() == "num") {
+                zasm::lines.push_back("mov " + AST["prog"][funcName][i]["left"]["value"].getValue() + "," + AST["prog"][funcName][i]["right"]["value"].getValue());
             }
             
-            else if (AST["prog"][i]["right"]["type"].getValue() == "arithmetic") {
-                calc(AST["prog"][i]["right"]["operator"].getValue(),  // Operator
-                    AST["prog"][i]["left"]["value"].getValue(),  // Receiver
-                    AST["prog"][i]["right"]["left"]["type"].getValue(),  // Left type
-                    AST["prog"][i]["right"]["left"]["value"].getValue(),  // Left value
-                    AST["prog"][i]["right"]["right"]["type"].getValue(),  // Right type 
-                    AST["prog"][i]["right"]["right"]["value"].getValue());  // Right value
-                //
+            else if (AST["prog"][funcName][i]["right"]["type"].getValue() == "arithmetic") {
+                calc(AST["prog"][funcName][i]["right"]["operator"].getValue(),  // Operator
+                    AST["prog"][funcName][i]["left"]["value"].getValue(),  // Receiver
+                    AST["prog"][funcName][i]["right"]["left"]["type"].getValue(),  // Left type
+                    AST["prog"][funcName][i]["right"]["left"]["value"].getValue(),  // Left value
+                    AST["prog"][funcName][i]["right"]["right"]["type"].getValue(),  // Right type 
+                    AST["prog"][funcName][i]["right"]["right"]["value"].getValue());  // Right value
             }
         }
-    } else if (AST["prog"][i]["type"].getValue() == "call") {
-        //cout << AST["prog"][i]["function"].getValue() << endl;
-        /*
-        if (AST["prog"][i]["module"].getValue() == "Console") {
-            if (AST["prog"][i]["args"].size() != 0) {
-                console(AST["prog"][i]["function"].getValue(), AST["prog"][i]["args"]["type"].getValue(), AST["prog"][i]["args"]["value"].getValue());
-            } else {
-                console(AST["prog"][i]["function"].getValue(), "null", "null");
+    } else if (AST["prog"][funcName][i]["type"].getValue() == "call") {
+        if (AST["prog"][funcName][i]["class"].getValue() != "") {
+            // TEMP: Console.write()
+            zasm::lines.push_back("mov ax,0");
+            zasm::lines.push_back("mov bx,1");
+            zasm::lines.push_back("mov dx," + AST["prog"][funcName][i]["args"]["value"].getValue());
+            zasm::lines.push_back("int 11h");
+
+            // Function
+            if (AST["prog"][funcName][i]["class"].getValue() == "") {
+                for (int i = 0; i < Functions.size(); i ++) {
+                    break;
+                }
             }
-            
+
         }
-        */
     }
 }
 
@@ -92,8 +95,8 @@ void Generator() {
     zasm::lines.push_back("section .data");
     generateData();
     zasm::lines.push_back("section .code");
-    for (int i = 0; i < AST["prog"].size(); i++) {
-        generateCode(i);
+    for (int i = 0; i < AST["prog"]["main"].size(); i ++) {
+        generateCode("main", i);
     }
     zasm::lines.push_back("int 0h");
 }

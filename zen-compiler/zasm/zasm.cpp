@@ -6,10 +6,12 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <utility>
 #include <vector>
 #include "zasm.h"
 
 using namespace std;
+using namespace zasm;
 
 namespace zasm {
     struct var {
@@ -20,15 +22,12 @@ namespace zasm {
     vector<string> lines;
 }
 
-using namespace zasm;
-
-
 vector<struct var> variables;
 vector<struct ins> instructions_c;
 vector<unsigned long long> instructions_b;
+vector<pair<string, int>>labels;
 
-int dataStart, dataEnd, codeStart;
-
+unsigned int dataStart, dataEnd, codeStart;
 
 struct ins {
     string opcode;
@@ -41,37 +40,37 @@ unsigned char opcodes_bin[] = {
     0x00, 0x01, 0x02, 0x03, 
     0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16,
     0x20,
-    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38
+    0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39
 };
 
 string opcodes_asm[] = {
     "mov", "xchg", "push", "pop",
     "add", "inc", "sub", "dec", "cmp", "mul", "div",
     "and",
-    "int", "loop", "jmp", "je", "jne", "jg", "jl", "jge", "jle"
+    "int", "loop", "jmp", "je", "jne", "jg", "jl", "jge", "jle", "ret"
 };
 
 int ins_operand_amount[] = {
     2, 2, 1, 1,
     2, 1, 2, 1, 2, 2, 2,
     2,
-    1, 1, 1, 1, 1, 1, 1, 1, 1
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 };
 
 string registers[] = {"ax", "bx", "cx", "dx"};
 
 void ShowError(int lineNumber, string errorInfo) {
     if (lineNumber == 0) {
-        cout<<"Error: " << errorInfo << endl;
+        cout << "Error: " << errorInfo << endl;
     } else {
-        cout<<"Error at Line " << lineNumber << ": " << errorInfo << endl;
+        cout << "Error at Line " << lineNumber << ": " << errorInfo << endl;
     }
     exit(0);
 }
 
 
 string trim(string str) {
-    int pos;
+    int pos;  // pos cannot be unsigned int here!
 	while ((pos = str.find(" ")) != string::npos) {
 		str.replace(pos, 1, "");
 	}
@@ -80,7 +79,7 @@ string trim(string str) {
 
 
 void DataSectionParser() {
-    for (int i = dataStart; i < dataEnd; i ++) {
+    for (unsigned int i = dataStart; i < dataEnd; i ++) {
         if (lines.at(i) == "" || trim(lines.at(i)) == "" || trim(lines.at(i))[0] == ';') {
             continue;
         }
@@ -88,8 +87,8 @@ void DataSectionParser() {
         bool readName = true;
         bool readType = true;
         bool readValue = true;
-        int k = 0;
-
+        unsigned int k = 0;
+        
         // Read variable name
         string name = "";
         while (readName) {
@@ -188,7 +187,7 @@ void DataSectionParser() {
 
         // Check redefined varaibles
         bool redefined = false;
-        for (int k = 0; k < variables.size(); k ++) {
+        for (unsigned int k = 0; k < variables.size(); k ++) {
             if (variables.at(k).name == variable.name) {
                 redefined = true;
                 break;
@@ -209,15 +208,24 @@ void DataSectionParser() {
 
 
 void CodeSectionParser() {
-    for (int i = codeStart; i < lines.size(); i ++) {
+    for (unsigned int i = codeStart; i < lines.size(); i ++) {
+        unsigned int k = 0;
+
         if (lines.at(i) == "" || trim(lines.at(i)) == "" || trim(lines.at(i))[0] == ';') {
             continue;
+        } else if (lines.at(i)[0] == '@') {
+            string labelName = "";
+            k ++;
+            while(lines.at(i)[k] != ':') {
+                labelName += lines.at(i)[k];
+                k ++;
+            }
+            labels.push_back({labelName, i - codeStart});
         }
-
+        
         bool readOpcode = true;
         bool readDestinationOperand = true;
         bool readSourceOperand = true;
-        int k = 0;
 
         // Read opcode
         string opcode = "";
@@ -228,7 +236,7 @@ void CodeSectionParser() {
             }
 
             if (isalpha(lines.at(i)[k])) {
-                while (lines.at(i)[k] != ' ') {
+                while (lines.at(i)[k] != ' ' && lines.at(i)[k] != '\n') {
                     opcode += lines.at(i)[k];
                     k ++;
                 }
@@ -237,14 +245,14 @@ void CodeSectionParser() {
             k ++;
         }
 
-        for (int k = 0; k < sizeof(opcodes_asm) / sizeof(opcodes_asm[0]); k ++) {
+        for (unsigned int k = 0; k < sizeof(opcodes_asm) / sizeof(opcodes_asm[0]); k ++) {
             if (opcodes_asm[k] == opcode) {
                 if (ins_operand_amount[k] == 1) {
                     readSourceOperand = false;
                 }
                 break;
             } else if (k == sizeof(opcodes_asm) / sizeof (opcodes_asm[0]) - 1) {
-                ShowError(i + 1, "Invalid opcode.");
+                ShowError(i + 1, "Invalid opcode: " + opcode);
             }
         }
 
@@ -294,7 +302,7 @@ void CodeSectionParser() {
 
 
 bool isMemory(string variableName) {
-    for (int i = 0; i < variables.size(); i ++) {
+    for (unsigned int i = 0; i < variables.size(); i ++) {
         if (variables.at(i).name == variableName) {
             return true;
         }
@@ -304,7 +312,7 @@ bool isMemory(string variableName) {
 
 
 void InstructionEncoder() {
-    for (int i = 0; i < instructions_c.size(); i ++) {
+    for (unsigned int i = 0; i < instructions_c.size(); i ++) {
         unsigned int instruction_b;
         int addressing = 255;
         int destinationOperand;
@@ -312,7 +320,7 @@ void InstructionEncoder() {
 
         // Encode opcode
         unsigned char opcode_b;
-        for (int k = 0; k < sizeof(opcodes_asm) / sizeof(opcodes_asm[0]); k ++) {
+        for (unsigned int k = 0; k < sizeof(opcodes_asm) / sizeof(opcodes_asm[0]); k ++) {
             if (opcodes_asm[k] == instructions_c.at(i).opcode) {
                 opcode_b = opcodes_bin[k];
                 break;
@@ -352,7 +360,7 @@ void InstructionEncoder() {
             else if (isMemory(instructions_c.at(i).destinationOperand)) {
                 addressing = 1;
                 instruction_b += addressing << 24;
-                for (int k = 0; k < variables.size(); k ++) {
+                for (unsigned int k = 0; k < variables.size(); k ++) {
                     if (variables.at(k).name == instructions_c.at(i).destinationOperand) {
                         destinationOperand = k + 6;
                         break;
@@ -362,7 +370,15 @@ void InstructionEncoder() {
             }
 
             else {
-                ShowError(instructions_c.at(i).fromWhichLine, "Invalid destination operand in single operand mode.");
+                // label
+                for (int m = 0; m < labels.size(); m ++) {
+                    if (instructions_c.at(i).destinationOperand == labels.at(m).first) {
+                        instruction_b += labels.at(m).second;
+                        break;
+                    } else if (m == labels.size() - 1) {
+                        ShowError(instructions_c.at(i).fromWhichLine, "Invalid destination operand in single operand mode.");
+                    }
+                }
             }
         }
 
@@ -405,7 +421,7 @@ void InstructionEncoder() {
                     destinationOperand = find(registers, registers + sizeof(registers) / sizeof(*registers), instructions_c.at(i).destinationOperand) - registers;
                     instruction_b += destinationOperand << 12;
 
-                    for (int k = 0; k < variables.size(); k ++) {
+                    for (unsigned int k = 0; k < variables.size(); k ++) {
                         if (variables.at(k).name == instructions_c.at(i).sourceOperand) {
                             sourceOperand = k + 6;
                             break;
@@ -424,7 +440,7 @@ void InstructionEncoder() {
                     addressing = 2;
                     instruction_b += addressing << 24;
 
-                    for (int k = 0; k < variables.size(); k ++) {
+                    for (unsigned int k = 0; k < variables.size(); k ++) {
                         if (variables.at(k).name == instructions_c.at(i).destinationOperand) {
                             destinationOperand = k + 6;
                             break;
@@ -449,7 +465,7 @@ void InstructionEncoder() {
                     addressing = 3;
                     instruction_b += addressing << 24;
 
-                    for (int k = 0; k < variables.size(); k ++) {
+                    for (unsigned int k = 0; k < variables.size(); k ++) {
                         if (variables.at(k).name == instructions_c.at(i).destinationOperand) {
                             destinationOperand = k + 6;
                             break;
@@ -467,7 +483,7 @@ void InstructionEncoder() {
                     addressing = 3;
                     instruction_b += addressing << 24;
 
-                    for (int k = 0; k < variables.size(); k ++) {
+                    for (unsigned int k = 0; k < variables.size(); k ++) {
                         if (variables.at(k).name == instructions_c.at(i).destinationOperand) {
                             destinationOperand = k + 6;
                             break;
@@ -476,7 +492,7 @@ void InstructionEncoder() {
 
                     instruction_b += destinationOperand << 12;
 
-                    for (int k = 0; k < variables.size(); k ++) {
+                    for (unsigned int k = 0; k < variables.size(); k ++) {
                         if (variables.at(k).name == instructions_c.at(i).sourceOperand) {
                             sourceOperand = k + 6;
                             break;
@@ -520,14 +536,14 @@ void ExecutableFileWrite(string asmFileName) {
     of.write((char*)&dataSegmentSize, 2);
     of.write((char*)&constantAmount, 2);
 
-    for (int i = 0; i < variables.size(); i ++) {
+    for (unsigned int i = 0; i < variables.size(); i ++) {
         of.write((char*)&variables.at(i).value, 8);
     }
 
     // Write code section
     of.write((char*)&instructionSegmentSize, 4);
 
-    for (int i = 0; i < instructionSegmentSize; i ++) {
+    for (unsigned int i = 0; i < instructionSegmentSize; i ++) {
         of.write((char*)&instructions_b.at(i), 4);
     }
 
@@ -537,16 +553,17 @@ void ExecutableFileWrite(string asmFileName) {
 
 void Initializer(string asmFileName) {
     // Scan the boundary of data section and code section
-    for (int i = 0; i < lines.size(); i ++) {
+    for (unsigned int i = 0; i < lines.size(); i ++) {
         vector<string> words;
         string line = lines.at(i);
         int pos = 0;
 
         // Split the words of each line
-        for (int k = 0; k < line.length(); k ++) {
+        for (unsigned int k = 0; k < line.length(); k ++) {
             if (line[k] == ' ') {
                 if (k == pos) {
                     pos ++;
+                    cout << pos << " ";
                 } else {
                     words.push_back(line.substr(pos, k - pos));
                     pos = k + 1;
@@ -559,7 +576,7 @@ void Initializer(string asmFileName) {
         int wordsAmount = words.size();
 
         // Find data section
-        if ((wordsAmount == 2 || wordsAmount >= 3 && words.at(2)[0] == ';') &&
+        if ((wordsAmount == 2 || (wordsAmount >= 3 && words.at(2)[0] == ';')) &&
             words.at(0) == "section" && words.at(1) == ".data"
         ) {
             dataStart = i + 1;
@@ -567,14 +584,14 @@ void Initializer(string asmFileName) {
         }
 
         // Find code section
-        else if ((wordsAmount == 2 || wordsAmount >= 3 && words.at(2)[0] == ';') &&
+        else if ((wordsAmount == 2 || (wordsAmount >= 3 && words.at(2)[0] == ';')) &&
             words.at(0) == "section" && words.at(1) == ".code"
         ) {
             dataEnd = i;
             codeStart = i + 1;
         }
     }
-
+    
     DataSectionParser();
     CodeSectionParser();
     InstructionEncoder();

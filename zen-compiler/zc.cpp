@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     sourcePath = sourceFileName.substr(0, i);
 
     // Lexical analysis
-    Lexer(codes);  
+    Lexer(codes, sourceFileName);  
     
     // Syntax analysis
     Parser();  
