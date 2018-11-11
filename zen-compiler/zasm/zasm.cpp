@@ -371,7 +371,7 @@ void InstructionEncoder() {
 
             else {
                 // label
-                for (int m = 0; m < labels.size(); m ++) {
+                for (unsigned int m = 0; m < labels.size(); m ++) {
                     if (instructions_c.at(i).destinationOperand == labels.at(m).first) {
                         instruction_b += labels.at(m).second;
                         break;
@@ -554,16 +554,16 @@ void ExecutableFileWrite(string asmFileName) {
 void Initializer(string asmFileName) {
     // Scan the boundary of data section and code section
     for (unsigned int i = 0; i < lines.size(); i ++) {
+        //cout << lines.at(i) << endl;
         vector<string> words;
         string line = lines.at(i);
-        int pos = 0;
+        unsigned int pos = 0;
 
         // Split the words of each line
         for (unsigned int k = 0; k < line.length(); k ++) {
             if (line[k] == ' ') {
                 if (k == pos) {
                     pos ++;
-                    cout << pos << " ";
                 } else {
                     words.push_back(line.substr(pos, k - pos));
                     pos = k + 1;

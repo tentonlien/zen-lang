@@ -138,5 +138,6 @@ int Tree::size() {
         count ++;
         tn = tn -> rightSibling;
     }
+    
     return count;
 }

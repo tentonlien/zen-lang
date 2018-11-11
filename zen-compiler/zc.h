@@ -20,6 +20,7 @@ extern struct tok token;
 extern std::vector<struct tok> tokens;
 extern std::vector<std::vector<struct tok>> lines;
 
+/*
 struct zen_function {
     string name;
     string returnType;
@@ -28,8 +29,10 @@ struct zen_function {
     vector<pair<string, string>> parameterList;
 
 };
+
 extern struct zen_function Function;
 extern vector<struct zen_function> Functions;
+*/
 
 struct zen_method {
     string accessModifier;
@@ -45,6 +48,7 @@ struct zen_class {
     string name;
     int startLine;
     int endLine;
+    string returnType;
     vector<struct zen_method> methods;
     string file;
 };

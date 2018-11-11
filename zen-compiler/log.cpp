@@ -55,7 +55,7 @@ void outputAST() {
     fprintf(fp, (jsonFormat(AST.preOrder()) + "\n\n").c_str());
 }
 
-
+/*
 void outputFunctionList() {
     fprintf(fp, "Function List:\n");
     fprintf(fp, "%-20s%-15s%-10s\n", "Name", "Lines", "Return Type");
@@ -64,6 +64,7 @@ void outputFunctionList() {
     }
     fprintf(fp, "\n");
 }
+*/
 
 
 void outputClassList() {
@@ -96,7 +97,7 @@ void log() {
     extern string sourcePath;
     fp = fopen((sourcePath + "/compilation.log").c_str(), "w+");
     outputTokens();
-    outputFunctionList();
+    //outputFunctionList();
     outputClassList();
     outputAST();
     outputASM();
