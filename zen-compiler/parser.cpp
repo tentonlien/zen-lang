@@ -1,445 +1,346 @@
 // Author: Tenton Lien
 // 10/7/2018
-// All Syntax Checks are done in the parser
+// All syntax checks are done in the parser
 
-#include <string>
-#include <map>
-#include <cstdio>
-#include <utility>
-#include "zc.h"
-#include "tree.h"
-#include "zasm/zasm.h"
+#include <iostream>
+#include <memory>
+#include "lexer.h"
+#include "parser.h"
+#include "zenc.h"
 
-using namespace std;
+std::vector<int> variableList;
+std::vector<int> classList;
 
-// Abstract syntax tree
-Tree AST;
-unsigned int pos = 0;
-unsigned int lineNumber = 0;
-unsigned int mainFunctionStart, mainFunctionEnd;
+unsigned int curTokenId = 0;
+Token curToken;
 
-struct zen_method Method;
-vector<struct zen_class> Classes;
+static std::shared_ptr<AssignmentExpr> parseAssignment();
 
-void scanFunction() {
-    struct zen_class Class;
-    Class.name = "main";
-    for (unsigned int i = 0; i < lines.size(); i ++) {
-        tokens = lines.at(i);
-        unsigned int c = 0;  // Cursor
-        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "fun")) continue;
-        if (tokens.size() <= ++ c || tokens.at(c).type != "word") {
-            ShowError(i + 1, "Invalid value statement");
+unsigned int currentClassId = 0;
+
+std::string jsonFormat(std::string json) {
+    unsigned int counter = 0;
+    const char* ch = json.c_str();
+    std::string result;
+    for (unsigned int i = 0; ch[i] != 0; i ++) {
+        if (ch[i] == '{') {
+            result += ch[i];
+            counter ++;
+            result += '\n';
+            for (unsigned int k = 0; k < counter; k ++) result += "    ";
+        } else if (ch[i] == '}') {
+            result += '\n';
+            counter --;
+            for (unsigned int k = 0; k < counter; k ++) result += "    ";
+            result += ch[i];
+        } else if (ch[i] == ',') {
+            result += ch[i];
+            result += '\n';
+            for (unsigned int k = 0; k < counter; k ++) result += "    ";
         }
-
-        if (tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == "(") {
-            while(tokens.at(c).type != "punc" || tokens.at(c).value != ")") {
-                c ++;
-                // TO-DO Parameter List
-            }
-            c ++;
+         else {
+            result += ch[i];
         }
-        
-        if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == ":") {
-            Method.returnType = tokens.at(c + 1).value;
-            c += 2;
-        } else {
-            Method.returnType = "";
-        }
-
-        if (tokens.size() > c && tokens.at(c).type == "operator" && tokens.at(c).value == "->") {
-            Method.startLine = Method.endLine = i;
-        }
-                            
-        else if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
-            Method.startLine = i;
-            unsigned int counter = 1;
-            unsigned int cursor = c + 1;
-            unsigned int j = i;
-            bool loop = true;
-            while (j < lines.size() && loop) {
-                vector<struct tok> tokens2 = lines.at(j);
-                for (unsigned int k = cursor; k < tokens2.size(); k ++) {
-                    if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "{") {
-                        counter ++;
-                    } else if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "}") {
-                        counter --;
-                    }
-                    if (counter == 0) {
-                        Method.endLine = j;
-                        loop = false;
-                        break;
-                    }
-                }
-                cursor = 0;
-                j ++;
-            }
-        }
-
-        else if (tokens.size() > c) {
-            //////
-        }
-
-        Method.name = tokens.at(1).value;
-        Class.methods.push_back(Method);
-        continue;
     }
-    Classes.push_back(Class);
+    return result;
 }
 
 
-void scanClass() {
-    for (unsigned int i = 0; i < lines.size(); i ++) {
-        struct zen_class Class;
-        tokens = lines.at(i);
-        unsigned int c = 0;  // Cursor
-        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "class")) continue;
-        if (tokens.size() <= ++ c || tokens.at(c).type != "word") {
-            ShowError(i + 1, "Invalid value statement");
-        }
-
-        if (tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == "(") {
-            while(tokens.at(c).type != "punc" || tokens.at(c).value != ")") {
-                c ++;
-                // TO-DO Parameter List
-            }
-            c ++;
-        }
-        
-        if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == ":") {
-            Class.returnType = tokens.at(c + 1).value;
-            c += 2;
-        } else {
-            Class.returnType = "";
-        }
-
-        if (tokens.size() > c && tokens.at(c).type == "operator" && tokens.at(c).value == "->") {
-            Class.startLine = Class.endLine = i;
-        }
-                            
-        else if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
-            Class.startLine = i;
-            unsigned int counter = 1;
-            unsigned int cursor = c + 1;
-            unsigned int j = i;
-            bool loop = true;
-            while (j < lines.size() && loop) {
-                vector<struct tok> tokens2 = lines.at(j);
-                for (unsigned int k = cursor; k < tokens2.size(); k ++) {
-                    if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "{") {
-                        counter ++;
-                    } else if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "}") {
-                        counter --;
-                    }
-                    if (counter == 0) {
-                        Class.endLine = j;
-                        loop = false;
-                        break;
-                    }
-                }
-                cursor = 0;
-                j ++;
-            }
-        }
-
-        else if (tokens.size() > c) {
-            //////
-        }
-
-        Class.name = tokens.at(1).value;
-        Class.file = tokens.at(1).file;
-        Classes.push_back(Class);
+bool gotoNextToken() {
+    if (curTokenId < tokens.size() - 1) {
+        curTokenId ++;
+        curToken = tokens.at(curTokenId);
+        return true;
     }
+    return false;
 }
 
 
-void scanMethod() {
-    for (unsigned int i = 0; i < lines.size(); i ++) {
-        tokens = lines.at(i);
-        unsigned int c = 0;  // Cursor
-        string whichFile;
+std::string Expr::toString() {}
 
-        if (!(tokens.size() > c && tokens.at(c).type == "keyword" && tokens.at(c).value == "def")) continue;
-        if (tokens.size() <= ++ c || tokens.at(c).type != "word") {
-            ShowError(i + 1, "Invalid value statement");
-        }
-
-        if (tokens.size() > ++ c && tokens.at(c).type == "punc" && tokens.at(c).value == "(") {
-            while(tokens.at(c).type != "punc" || tokens.at(c).value != ")") {
-                c ++;
-                // TO-DO Parameter List
-            }
-            c ++;
-        }
-        
-        if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == ":") {
-            Method.returnType = tokens.at(c + 1).value;
-            c += 2;
-        } else {
-            Method.returnType = "";
-        }
-
-        if (tokens.size() > c && tokens.at(c).type == "operator" && tokens.at(c).value == "->") {
-            Method.startLine = Method.endLine = i;
-        }
-                            
-        else if (tokens.size() > c && tokens.at(c).type == "punc" && tokens.at(c).value == "{") {
-            Method.startLine = i;
-            unsigned int counter = 1;
-            unsigned int cursor = c + 1;
-            unsigned int j = i;
-            bool loop = true;
-            while (j < lines.size() && loop) {
-                vector<struct tok> tokens2 = lines.at(j);
-                for (unsigned int k = cursor; k < tokens2.size(); k ++) {
-                    if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "{") {
-                        counter ++;
-                    } else if (tokens2.at(k).type == "punc" && tokens2.at(k).value == "}") {
-                        counter --;
-                    }
-                    if (counter == 0) {
-                        Method.endLine = j;
-                        loop = false;
-                        break;
-                    }
-                }
-                cursor = 0;
-                j ++;
-            }
-        }
-
-        else if (tokens.size() > c) {
-            //////
-        }
-
-        Method.name = tokens.at(1).value;
-        for (unsigned int k = 0; k < Classes.size(); k ++) {
-            if (Classes.at(k).file == tokens.at(1).file) {
-                if (Method.startLine > Classes.at(k).startLine && Method.endLine <= Classes.at(k).endLine) {
-                    Classes.at(k).methods.push_back(Method);
-                }
-            }
-        }     
-    }        
+std::string VariableExpr::toString() {
+    std::string json = "{";
+    json += "type: \"var\",";
+    json += "name: \"" + this -> name + "\",";
+    json += "dtype: \"" + this -> type + "\",";
+    json += "}";
+    return json;
 }
 
 
-void parseVariable() {
-    string name, type, value;
-    name = tokens.at(pos + 1).value;
-    if (tokens.at(pos + 2).value == ":") {
-        type = tokens.at(pos + 3).value;
-        value = tokens.at(pos + 5).value;
-        pos += 6;
+std::string ClassExpr::toString() {
+    std::string json = "{";
+    json += "type: \"class\",";
+    json += "name: \"" + this -> name + "\",";
+    json += "variables: [";
+    for (auto variable: this -> memberVariables) {
+        json += variable -> toString();
+    }
+    json += "],";
+
+    json += "classes: [";
+    for (auto eleClass: this -> classes) {
+        json += eleClass -> toString();
+    }
+    json += "],";
+
+    json += "methods: [";
+    for (auto method: this -> methods) {
+        json += method -> toString();
+    }
+    json += "]";
+    json += "}";
+    return json;
+}
+
+
+std::string FunctionExpr::toString() {
+    std::string json = "{";
+    json += "type: \"function\",";
+    json += "name: \"" + this -> name + "\",";
+    json += "body: {";
+    for (std::shared_ptr<Expr> singleExpr: this -> body) {
+        json += singleExpr -> toString() + ",";
+    }
+    json += "}";
+    json += "},";
+    return json;
+}
+
+
+std::string CallExpr::toString() {
+    std::string json = "{";
+    json += "type: \"call\",";
+    json += "callee: \"" + this -> callee + "\",";
+    json += "}";
+    return json;
+}
+
+
+std::string AssignmentExpr::toString() {
+    std::string json = "{";
+    json += "type: \"Assign\",";
+    json += "left: \"" + this -> leftValue + "\",";
+    json += "}";
+    return json;
+}
+
+
+static std::shared_ptr<VariableExpr> parseVariable() {
+    if (!curToken.isKeyword("var")) {
+        return nullptr;
+    }
+
+    std::shared_ptr<VariableExpr> newVariable(new VariableExpr);
+    gotoNextToken();
+
+    // handle variable name
+    if (!curToken.isIdentifier()) {
+        showError(curToken.fileId, curToken.lineNumber, "Variable Statement Error", "Missing Identifier");
     } else {
-        if (tokens.at(pos + 3).type == "num") {
-            type = "i64";
-            value = tokens.at(pos + 3).value;
-            pos += 4;
+        newVariable -> name = curToken.value;
+    }
+    gotoNextToken();
+
+    // handle variable data type
+    if (curToken.isPunc(":")) {
+        gotoNextToken();
+        if (curToken.isType()) {
+            newVariable -> type = curToken.value;
         }
     }
 
-    if (pos < tokens.size()) {
-        ShowError(lineNumber + 1, "Invalid word \"" + tokens.at(pos).value + "\"");
-    }
-
-    int newElementId = AST["data"].size();
-    AST["data"].add(newElementId);
-    AST["data"][newElementId].add("name", name);
-    AST["data"][newElementId].add("type", type);
-    AST["data"][newElementId].add("value", value);
+    std::cout << "Parse Variable: " << newVariable -> name << " " << newVariable -> type << std::endl;
+    return newVariable;
 }
 
 
-Tree* parseExpression(int start, int end) {
-    int loop = start;
-    while (loop + 1 < end) {
-        string oprt = tokens.at(loop).value;
-        if (oprt == "+" || oprt == "-") {
-            Tree* tree = new Tree();
-            tree -> add("type", "arithmetic");
-            tree -> add("operator", oprt);
-
-            tree -> add("left");
-            (*tree)["left"].add("type", tokens.at(loop - 1).type);
-            (*tree)["left"].add("value", tokens.at(loop - 1).value);
-
-            tree -> add("right");
-            (*tree)["right"].add("type", tokens.at(loop + 1).type);
-            (*tree)["right"].add("value", tokens.at(loop + 1).value);
-
-            return tree;
-        }
-        loop ++;
+static std::shared_ptr<CallExpr> parseCall() {
+    std::shared_ptr<CallExpr> newCall = std::make_shared<CallExpr>();
+    newCall -> callee = tokens[curTokenId - 1].value;
+    while (!curToken.isPunc(")")) {
+        gotoNextToken();
     }
-    return NULL;
+    std::cout << "Parse Call: " << newCall -> callee << std::endl;
+    return newCall;
 }
 
 
-void parseAssignment(Tree branch) {
-    branch.add("type", "assign");
-    branch.add("operator", tokens.at(pos + 1).value);
+static std::shared_ptr<Expr> parseExpression() {
+    std::shared_ptr<Expr> newExpression;
+    // parse class
 
-    branch.add("left");
-    branch["left"].add("type", "var");
-    branch["left"].add("value", tokens.at(pos).value);
-
-    branch.add("right");
-    if (parseExpression(pos + 2, tokens.size()) != NULL) {
-        branch["right"].add(*parseExpression(pos + 2, tokens.size()));
-    } else if (tokens.at(pos + 2).type == "num") {
-        branch["right"].add("type", "num");
-        branch["right"].add("value", tokens.at(pos + 2).value);
-    }
-}
-
-
-void parseASM(Tree branch) {
-    // Check syntax
-    if (pos + 1 >= tokens.size() || !(tokens.at(pos + 1).type == "punc" && tokens.at(pos + 1).value == "(")) {
-        ShowError(lineNumber + 1, "Missing symbol \"(\" while parsing asm");
-    }
-    if (pos + 3 >= tokens.size() || !(tokens.at(pos + 3).type == "punc" && tokens.at(pos + 3).value == ")")) {
-        ShowError(lineNumber + 1, "Missing symbol \")\" while parsing asm");
-    }
-    if (tokens.at(pos + 2).type != "string") {
-        ShowError(lineNumber + 1, "Parameter's data type error. String required.");
-    }
-    if (pos + 4 < tokens.size()) {
-        string unidentified = "";
-        for (unsigned int i = pos + 4; i < tokens.size(); i ++) {
-            unidentified += "\"" + tokens.at(i).value + "\" ";
-        }
-        ShowError(lineNumber + 1, "Unidentified symbol " + unidentified + "at the end of this line.");
+    if (curToken.isKeyword("class")) {
+        // TO DO
+        gotoNextToken();
     }
 
-    branch.add("type", "asm");
-    branch.add("value", tokens.at(pos + 2).value);
-}
-
-
-void parseLine(string className, struct zen_method def, int lineNumber) {
-    for (lineNumber = def.startLine + 1; lineNumber <= def.endLine; lineNumber ++) {
-        tokens = lines.at(lineNumber);
-        pos = 0;
-
-        while(pos < tokens.size()) {
-            // Parse variables
-            if (tokens.at(pos).type == "keyword" && tokens.at(pos).value == "var") {
-                parseVariable();
-                break;
-            }
-
-            // Parse Assembly Instructions
-            else if (tokens.at(pos).type == "keyword" && tokens.at(pos).value == "asm") {
-                int newElementId = AST["prog"][className]["def"][def.name]["body"].size();
-                AST["prog"][className]["def"][def.name]["body"].add(newElementId);
-                Tree branch = AST["prog"][className]["def"][def.name]["body"][newElementId];
-                parseASM(branch);
-                break;
-            }
-
-            else if (tokens.at(pos).type == "word" && pos + 2 < tokens.size()) {
-                // Parse Method Call
-                if (pos + 3 < tokens.size() &&
-                    tokens.at(pos + 1).type == "punc" && tokens.at(pos + 1).value == "." &&
-                    tokens.at(pos + 2).type == "word" &&
-                    tokens.at(pos + 3).type == "punc" && tokens.at(pos + 3).value == "("
-                ) {
-                    if (!(tokens.at(tokens.size() - 1).type == "punc" && tokens.at(tokens.size() - 1).value == ")")) {
-                        ShowError(lineNumber + 1, "Missing \")\"");
-                    }
-                    int newElementId = AST["prog"][className]["def"][def.name]["body"].size();
-                    AST["prog"][className]["def"][def.name]["body"].add(newElementId);
-                    Tree branch = AST["prog"][className]["def"][def.name]["body"][newElementId];
-                    branch.add("type", "call");
-                    branch.add("class", tokens.at(pos).value);
-                    branch.add("def", tokens.at(pos + 2).value);
-                    if (tokens.size() > pos + 4 && tokens.at(pos + 3).value != "()" && tokens.at(pos + 4).value != ")") {
-                        branch.add("args");
-                        branch["args"].add("type", tokens.at(pos + 4).type);
-                        branch["args"].add("value", tokens.at(pos + 4).value);
-                    } else {
-                        branch.add("args");
-                        branch["args"].add("type", "null");
-                    }
-                    break;
-                }
-
-                // Parse Function Call
-                if (tokens.at(pos + 1).type == "punc" && tokens.at(pos + 1).value == "(") {
-                    if (!(tokens.at(tokens.size() - 1).type == "punc" && tokens.at(tokens.size() - 1).value == ")")) {
-                        ShowError(lineNumber + 1, "Missing \")\"");
-                    }
-                    int newElementId = AST["prog"][className]["def"][def.name]["body"].size();
-                    AST["prog"][className]["def"][def.name]["body"].add(newElementId);
-                    Tree branch = AST["prog"][className]["def"][def.name]["body"][newElementId];
-                    branch.add("type", "call");
-                    branch.add("class", "main");
-                    branch.add("def", tokens.at(pos).value);
-                    if (tokens.size() > 3 && tokens.at(pos + 3).value != "()") {
-                        branch.add("args");
-                        branch["args"].add("type", tokens.at(pos + 4).type);
-                        branch["args"].add("value", tokens.at(pos + 4).value);
-                    } else {
-                        branch.add("args");
-                        branch["args"].add("type", "null");
-                    }
-                    break;
-                }
-
-                // Parse assginment
-                else if (tokens.at(pos).type == "word" && pos + 2 < tokens.size()  && tokens.at(pos + 1).value == "=" && tokens.at(pos + 2).value != "(") {
-                    int newElementId = AST["prog"][className]["def"][def.name]["body"].size();
-                    AST["prog"][className]["def"][def.name]["body"].add(newElementId);
-                    Tree branch = AST["prog"][className]["def"][def.name]["body"][newElementId];
-                    parseAssignment(branch);
-                    break;
-                    //pos ++;
-                }
-                
-                else {
-                    pos ++;
-                }
-            }
-
-            else {
-                pos ++;
-            }
-        }
+    // parse function
+    else if (curToken.isKeyword("fun")) {
+        //newExpr = parseFunction();
     }
-}
 
+    // parse return
+    else if (curToken.isKeyword("return")) {
+        // TO DO
+    }
 
-void Parser() {
-    // Initial abstract syntax tree
-    AST.add("data");
-    AST.add("prog");
+    // parse variable
+    else if (curToken.isKeyword("var")) {
+        return parseVariable();
+    }
 
-    scanFunction();
-    scanClass();
-    scanMethod();
-    bool isMainFunctionExist = false;
+    // parse assignment
+    else if (curToken.isOperator("=")) {
+        return parseAssignment();
+    }
     
-    // Parse Class
-    for (unsigned int i = 0; i < Classes.size(); i ++) {
-        
-        AST["prog"].add(Classes.at(i).name);
-        AST["prog"][Classes.at(i).name].add("def");
-        
-        for (unsigned int k = 0; k < Classes.at(i).methods.size(); k ++) {
-            AST["prog"][Classes.at(i).name]["def"].add(Classes.at(i).methods.at(k).name);
-            AST["prog"][Classes.at(i).name]["def"][Classes.at(i).methods.at(k).name].add("body");
-            parseLine(Classes.at(i).name, Classes.at(i).methods.at(k), 0);
+    else if (curToken.isIdentifier()) {
+        gotoNextToken();
+        if (curToken.isPunc("(")) {
+            return parseCall();
+        }
+        return newExpression;
+    }
+    return nullptr;
+}
 
-            if (Classes.at(i).name == "main" && Classes.at(i).methods.at(k).name == "main") {
-                isMainFunctionExist = true;
+
+static std::shared_ptr<AssignmentExpr> parseAssignment() {
+    std::shared_ptr<AssignmentExpr> newAssign = std::make_shared<AssignmentExpr>();
+    newAssign -> leftValue = tokens[curTokenId - 1].value;
+    //newAssign.leftExpr = parseAll();
+    gotoNextToken();
+    std::cout << "Parse Assignment: " << newAssign -> leftValue << std::endl;
+    return newAssign;
+}
+
+
+static std::shared_ptr<FunctionExpr> parseFunction() {
+    if (!curToken.isKeyword("fun")) {
+        return nullptr;
+    }
+
+    std::shared_ptr<FunctionExpr> newFunction(new FunctionExpr);
+    gotoNextToken();
+
+    // handle function name
+    if (curToken.isIdentifier()) {
+        newFunction -> name = curToken.value;
+    }
+    
+    while (!curToken.isPunc("{") && !curToken.isOperator("->")) {
+        gotoNextToken();
+    }
+
+    // parse function body
+    unsigned int braceCount = 0;
+    while (gotoNextToken()) {
+        if (curToken.isPunc("{")) {
+            braceCount ++;
+        } else if (curToken.isPunc("}")) {
+            if (braceCount == 0) {
+                break;
+            } else {
+                braceCount --;
+            }
+        } else {
+            std::shared_ptr<Expr> newExpression(parseExpression());
+            if (newExpression != nullptr) {
+                newFunction -> body.push_back(newExpression);
             }
         }
-        
-        // Check if main function exist
-        if (i == Classes.size() - 1 && !isMainFunctionExist) {
-            ShowError(0, "Function \"main\" required as entry of the program");
+    }
+    
+    std::cout << "Parse Function: " << newFunction -> name << std::endl;
+    return newFunction;
+}
+
+
+static std::shared_ptr<ClassExpr> parseClass() {
+    if (!curToken.isKeyword("class")) {
+        std::cout << "passed: " << tokens.at(curTokenId + 1).value << std::endl;
+        return nullptr;
+    }
+
+    std::shared_ptr<ClassExpr> newClass(new ClassExpr);
+    gotoNextToken();
+
+    if (curToken.isIdentifier()) {
+        newClass -> name = curToken.value;
+    } else {
+        showError(0, 0, "Error", "Missing class name: " + curToken.value);
+    }
+    
+    gotoNextToken();
+
+    unsigned int braceCount = 0;
+    while (gotoNextToken()) {
+        if (curToken.isPunc("{")) {
+            braceCount ++;
+        } else if (curToken.isPunc("}")) {
+            if (braceCount == 0) {
+                break;
+            } else {
+                braceCount --;
+            }
+        } else {
+            // parse functions
+            std::shared_ptr<FunctionExpr> functionPointer(parseFunction());
+            if (functionPointer  != nullptr) {
+                newClass -> methods.push_back(functionPointer);
+            } else {
+                // parse classes
+                std::shared_ptr<ClassExpr> classPointer(parseClass());
+                if (classPointer != nullptr) {
+                    newClass -> classes.push_back(classPointer);
+                } else {
+                    // parse global variables
+                    std::shared_ptr<VariableExpr> variablePointer(parseVariable());
+                    if (variablePointer != nullptr) {
+                        newClass -> memberVariables.push_back(variablePointer);
+                    }
+                }
+            }
         }
     }
+    
+    std::cout << "Parse Class: " << newClass -> name << std::endl;
+    return newClass;
+}
+
+
+std::shared_ptr<ClassExpr> Parser() {
+    curToken = tokens.at(curTokenId);
+    std::shared_ptr<ClassExpr> mainClass(parseClass());
+    //mainClass -> name = "main";
+    
+    // while (curTokenId < tokens.size() - 2) {
+    //     curToken = tokens.at(curTokenId);
+    //     // parse functions
+    //     std::shared_ptr<FunctionExpr> functionPointer(parseFunction());
+    //     if (functionPointer  != nullptr) {
+    //         mainClass -> methods.push_back(functionPointer);
+    //     } else {
+    //         // parse classes
+    //         std::shared_ptr<ClassExpr> classPointer(parseClass());
+    //         if (classPointer != nullptr) {
+    //             mainClass -> classes.push_back(classPointer);
+    //         } else {
+    //             // parse global variables
+    //             std::shared_ptr<VariableExpr> variablePointer(parseVariable());
+    //             if (variablePointer != nullptr) {
+    //                 mainClass -> memberVariables.push_back(variablePointer);
+    //             }
+    //         }
+            
+    //     }
+    //     curTokenId ++;
+    // }
+    if (mainClass != nullptr) {
+        std::cout << jsonFormat(mainClass -> toString()) << std::endl;
+    } else {
+        std::cout << "nullptr" <<std::endl;
+    }
+    return mainClass;
 }

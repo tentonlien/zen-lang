@@ -6,12 +6,10 @@ SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
 SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
 
 add_executable(
-    zen-compiler
-    generator.cpp
+    zenc
+    zenc.cpp
     lexer.cpp
-    log.cpp
     parser.cpp
-    tree.cpp
-    zasm/zasm.cpp
-    zc.cpp 
+    generator.cpp
+    assembler.cpp
 )
