@@ -164,6 +164,7 @@ int getVariableLocation(std::vector<std::string> variables, std::string variable
 
 
 void analyse(std::vector<std::string> words) {
+    std::cout << "analyse: " << words[0] << std::endl;
     // analyse jump tag
     if (words[0][0] == '#') {
         struct JumpPoint jumpPoint;
@@ -182,7 +183,6 @@ void analyse(std::vector<std::string> words) {
     if (words[0][0] == '.') {
         // bytecode version
         if (words[0] == ".version") {
-            std::cout << "madaok" << words[1] << std::endl;
             //exit(0);
             bytecodeVersion = std::stoi(words[1], 0, 10);
             
@@ -229,9 +229,9 @@ void analyse(std::vector<std::string> words) {
             } else {
                 newConstant.value = words[2];
             }
-            globalConstants.push_back(newConstant);
-
+            
             if (isGlobal) {
+                globalConstants.push_back(newConstant);
                 globalVariables.push_back(words[0].substr(1));
                 globalDataSegmentSize ++;
                 globalConstantAmount ++;
@@ -253,8 +253,6 @@ void analyse(std::vector<std::string> words) {
                 instructions_b[currentProcedureStartPosition] ++;
             }
         }
-
-        
     }
 
     // analyse procedure
@@ -314,7 +312,7 @@ void analyse(std::vector<std::string> words) {
                     curInstruction += operand_2 << 8;
                     curInstruction += operand_3;
                 }
-
+                printf("Ins: %llx\n", curInstruction);
                 instructions_b.push_back(curInstruction);
 
                 // increase amount of instruction amount
@@ -328,6 +326,12 @@ void analyse(std::vector<std::string> words) {
 
 void Assembler(std::vector<std::string> asmLines) {
     for (auto line: asmLines) {
+        if (line == "") {
+            currentLine ++;
+            continue;
+        }
+        //std::cout << "*" << line << "*" << std::endl;
+        //std::cout << (int)line[line.length() - 1] << std::endl;
         std::vector<std::string> words;
         unsigned int curWordStart = 0;
         bool readingString = false;
@@ -342,6 +346,10 @@ void Assembler(std::vector<std::string> asmLines) {
                 words.push_back(line.substr(curWordStart, i - curWordStart + 1));
             }
         }
+        for (auto word: words) {
+            //std::cout << word << " + ";
+        }
+        //std::cout << std::endl;
         analyse(words);
         currentLine ++;
     }

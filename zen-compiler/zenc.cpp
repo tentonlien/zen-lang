@@ -75,11 +75,24 @@ int main(int argc, char* argv[]) {
             std::vector<std::string> asmLines;
             std::string asmCodes = readTextFile(sourceFileName);
             unsigned int curLineStart = 0;
-            for (unsigned int i = 0; i <= asmCodes.length(); i ++) {
-                if (asmCodes[i] == '\n' || i == asmCodes.length()) {
-                    asmLines.push_back(asmCodes.substr(curLineStart, i - curLineStart));
+            for (unsigned int i = 0; i < asmCodes.length(); i ++) {
+                if (asmCodes[i] == '\n') {
+                    //std::cout << "ahahahah " << i - curLineStart <<std::endl;
+                    if (i - 1 <= curLineStart) {
+                        asmLines.push_back("");
+                        curLineStart = i + 1;
+                    } else {
+                        asmLines.push_back(asmCodes.substr(curLineStart, i - curLineStart - 1));
+                        curLineStart = i + 1;
+                    }
                     //std::cout << "haha: " << curLineStart << " "<< asmCodes.substr(curLineStart, i  - curLineStart) << std::endl;
-                    curLineStart = i + 1;
+                    
+                } else if (i + 1 == asmCodes.length()) {
+                    if (i - 1 <= curLineStart) {
+                        asmLines.push_back("");
+                    } else {
+                        asmLines.push_back(asmCodes.substr(curLineStart, i - curLineStart + 1));
+                    }
                 }
             }
             Assembler(asmLines);
@@ -101,10 +114,10 @@ int main(int argc, char* argv[]) {
     auto AST = Parser(); 
 
     // generator: codegen
-    Generator(AST);
+    std::vector<std::string> asmLines = Generator(AST);
 
     // zen assembler
-    //Assembler(Generator());
+    Assembler(asmLines);
     
     return 0;
 }

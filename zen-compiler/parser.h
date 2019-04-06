@@ -8,6 +8,7 @@
 class Expr {
 public:
     std::string name;
+    std::string value;
     virtual void codegen();
     virtual std::string toString();
 };
@@ -31,6 +32,15 @@ public:
     std::string name;
     std::string value;
 
+    void codegen();
+    std::string toString();
+};
+
+class ConstString: public Expr {
+public:
+    std::string type;
+    std::string value;
+    
     void codegen();
     std::string toString();
 };
@@ -63,7 +73,7 @@ public:
 class CallExpr: public Expr {
 public:
     std::string callee;
-    std::vector<std::string> args;
+    std::vector<std::shared_ptr<Expr>> args;
 
     void codegen();
     std::string toString();

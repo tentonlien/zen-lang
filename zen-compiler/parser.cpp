@@ -15,6 +15,7 @@ unsigned int curTokenId = 0;
 Token curToken;
 
 static std::shared_ptr<AssignmentExpr> parseAssignment();
+static std::shared_ptr<Expr> parseExpression();
 
 unsigned int currentClassId = 0;
 
@@ -67,6 +68,9 @@ std::string VariableExpr::toString() {
     return json;
 }
 
+std::string ConstString::toString() {
+    return this -> value;
+}
 
 std::string ClassExpr::toString() {
     std::string json = "{";
@@ -112,6 +116,10 @@ std::string CallExpr::toString() {
     std::string json = "{";
     json += "type: \"call\",";
     json += "callee: \"" + this -> callee + "\",";
+    for (unsigned int i = 0; i < this -> args.size(); i ++) {
+        std::cout << this -> callee << this -> args.size() << std::endl;
+        json += "args: \"" + this -> args[i] -> toString() + "\",";
+    }
     json += "}";
     return json;
 }
@@ -132,7 +140,7 @@ static std::shared_ptr<VariableExpr> parseVariable() {
     }
 
     std::shared_ptr<VariableExpr> newVariable(new VariableExpr);
-    gotoNextToken();
+    gotoNextToken(); 
 
     // handle variable name
     if (!curToken.isIdentifier()) {
@@ -147,6 +155,8 @@ static std::shared_ptr<VariableExpr> parseVariable() {
         gotoNextToken();
         if (curToken.isType()) {
             newVariable -> type = curToken.value;
+        } else {
+            showError(curToken.fileId, curToken.lineNumber, "Error", "Invalid data type '" + curToken.value + "'");
         }
     }
 
@@ -160,6 +170,10 @@ static std::shared_ptr<CallExpr> parseCall() {
     newCall -> callee = tokens[curTokenId - 1].value;
     while (!curToken.isPunc(")")) {
         gotoNextToken();
+        std::shared_ptr<Expr> newExpression = parseExpression();
+        if (newExpression != nullptr) {
+            newCall -> args.push_back(parseExpression());
+        }
     }
     std::cout << "Parse Call: " << newCall -> callee << std::endl;
     return newCall;
@@ -195,12 +209,19 @@ static std::shared_ptr<Expr> parseExpression() {
         return parseAssignment();
     }
     
-    else if (curToken.isIdentifier()) {
+    // parse call
+    else if (curToken.isIdentifier() || curToken.isKeyword("asm")) {
         gotoNextToken();
         if (curToken.isPunc("(")) {
             return parseCall();
         }
         return newExpression;
+    }
+
+    else if (curToken.isString()) {
+        std::shared_ptr<ConstString> newString = std::make_shared<ConstString>();
+        newString -> value = curToken.value;
+        return newString;
     }
     return nullptr;
 }
@@ -313,30 +334,6 @@ static std::shared_ptr<ClassExpr> parseClass() {
 std::shared_ptr<ClassExpr> Parser() {
     curToken = tokens.at(curTokenId);
     std::shared_ptr<ClassExpr> mainClass(parseClass());
-    //mainClass -> name = "main";
-    
-    // while (curTokenId < tokens.size() - 2) {
-    //     curToken = tokens.at(curTokenId);
-    //     // parse functions
-    //     std::shared_ptr<FunctionExpr> functionPointer(parseFunction());
-    //     if (functionPointer  != nullptr) {
-    //         mainClass -> methods.push_back(functionPointer);
-    //     } else {
-    //         // parse classes
-    //         std::shared_ptr<ClassExpr> classPointer(parseClass());
-    //         if (classPointer != nullptr) {
-    //             mainClass -> classes.push_back(classPointer);
-    //         } else {
-    //             // parse global variables
-    //             std::shared_ptr<VariableExpr> variablePointer(parseVariable());
-    //             if (variablePointer != nullptr) {
-    //                 mainClass -> memberVariables.push_back(variablePointer);
-    //             }
-    //         }
-            
-    //     }
-    //     curTokenId ++;
-    // }
     if (mainClass != nullptr) {
         std::cout << jsonFormat(mainClass -> toString()) << std::endl;
     } else {
